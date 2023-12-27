@@ -2,14 +2,25 @@ from fastapi import FastAPI, Query
 from seleniumbase import DriverContext
 from selenium.webdriver.common.by import By
 from dateutil.relativedelta import relativedelta
+from pydantic import BaseModel
 import datetime
 
 app = FastAPI(title='Service_Anton')
 
+class Enterprise_Item(BaseModel):
+    full_name: str
+    short_name: str
+    objects_current_state: str
+    code_of_enterprise: str
+    date_of_creation: str
+    age_of_enterprise: str
 
-@app.get("/info/{edrpu_code}")
+
+@app.get("/info/{edrpu_code}", response_model=Enterprise_Item)
 def get_code(edrpu_code: str, source=Query(description='opendatabot or youcontrol', pattern='^opendatabot|youcontrol$')):
-    return get_enterprise_info(edrpu_code, source)
+    info_of_enterprise = get_enterprise_info(edrpu_code, source)
+    return info_of_enterprise
+
 
 
 def get_enterprise_info(code, source):
@@ -65,10 +76,10 @@ def get_info_opendatabot(code, driver):
         dict_res = {
             'full_name': full_name,
             'short_name': short_name,
-            'objects_state': objects_state,
-            'code_of_enterpise': code,
+            'objects_current_state': objects_state,
+            'code_of_enterprise': code,
             'date_of_creation': date_of_creation,
-            'age_of_company': age_of_company
+            'age_of_enterprise': age_of_company
         }
 
         return dict_res
