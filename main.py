@@ -1,26 +1,29 @@
 from fastapi import FastAPI, Query
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+from redis import asyncio as aioredis
 from seleniumbase import DriverContext
 from selenium.webdriver.common.by import By
-from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
+from dateutil.relativedelta import relativedelta
 import datetime
+
+from models import Enterprise_Item
 
 app = FastAPI(title='Service_Anton')
 
-class Enterprise_Item(BaseModel):
-    full_name: str
-    short_name: str
-    objects_current_state: str
-    code_of_enterprise: str
-    date_of_creation: str
-    age_of_enterprise: str
-
 
 @app.get("/info/{edrpu_code}", response_model=Enterprise_Item)
-def get_code(edrpu_code: str, source=Query(description='opendatabot or youcontrol', pattern='^opendatabot|youcontrol$')):
+@cache(expire=86400)
+def get_code(edrpu_code: str, source=Query(description='opendatabot or youcontrol', pattern='^opendatabot|youcontrol$')) -> Enterprise_Item:
     info_of_enterprise = get_enterprise_info(edrpu_code, source)
     return info_of_enterprise
 
+@app.on_event('startup')
+async def sturtup():
+    redis = aioredis.from_url("redis://localhost")
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
 
 
 def get_enterprise_info(code, source):
